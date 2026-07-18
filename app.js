@@ -151,8 +151,7 @@ const DB = {
         this._cargado = true;
         return;
       } catch (e) {
-        console.warn('No se pudo cargar desde GitHub:', e);
-        mostrarEstado('error', 'Error cargando desde GitHub. Usando caché local.');
+        console.warn('GitHub:', e);
       }
     }
     // Fallback: caché local
@@ -165,9 +164,9 @@ const DB = {
 
   async _cargarDesdeGitHub(config) {
     const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.rama}`;
-    const resp = await fetch(url, {
-      headers: { 'Accept': 'application/vnd.github.v3+json' }
-    });
+    const headers = { 'Accept': 'application/vnd.github.v3+json' };
+    if (config.token) headers['Authorization'] = `token ${config.token}`;
+    const resp = await fetch(url, { headers });
     if (!resp.ok) throw new Error(resp.status);
     const data = await resp.json();
     this._sha = data.sha;
