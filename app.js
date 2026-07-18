@@ -371,6 +371,21 @@ function extraerYouTubeId(url) {
 }
 
 // --- SPRITES ---
+function reparsearEquipo(raw, equipoGuardado) {
+  if (!raw) return equipoGuardado || [];
+  const nuevo = parsearPoképaste(raw);
+  if (!equipoGuardado || equipoGuardado.length === 0) return nuevo;
+  const antiguo = new Map(equipoGuardado.map(p => [p.nombre, p]));
+  return nuevo.map(p => {
+    const old = antiguo.get(p.nombre);
+    if (old) {
+      p.calcsOfensivo = old.calcsOfensivo || '';
+      p.calcsDefensivo = old.calcsDefensivo || '';
+    }
+    return p;
+  });
+}
+
 function spriteUrl(sprite) {
   const BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
   if (typeof sprite === 'string') return BASE + sprite;
@@ -503,7 +518,7 @@ const Sesiones = {
         <div class="card-title">${escHtml(s.tema)}</div>
         ${s.descripcion ? `<div class="card-desc">${renderDescripcion(s.descripcion)}</div>` : ''}
         ${(s.pokepastes || []).map(p => `
-          ${renderEquipo(p.equipo, p.url, s.tipo, s.id)}
+          ${renderEquipo(reparsearEquipo(p.raw, p.equipo), p.url, s.tipo, s.id)}
           ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
         `).join('')}
         ${renderReplays(s.replays)}
@@ -696,7 +711,7 @@ const Deberes = {
           <div class="deber-titulo">${escHtml(d.titulo)}</div>
           ${d.descripcion ? `<div class="deber-desc">${renderDescripcion(d.descripcion)}</div>` : ''}
           ${(d.pokepastes || []).map(p => `
-            ${renderEquipo(p.equipo, p.url)}
+            ${renderEquipo(reparsearEquipo(p.raw, p.equipo), p.url)}
             ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
           `).join('')}
           <div class="deber-meta">
