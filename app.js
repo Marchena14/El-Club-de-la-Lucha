@@ -369,17 +369,20 @@ function extraerYouTubeId(url) {
 function spriteUrl(sprite) {
   const BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
   if (typeof sprite === 'string') return BASE + sprite;
-  return `${BASE}${sprite}.png`;
+  if (typeof sprite === 'number') return `${BASE}${sprite}.png`;
+  return `${BASE}0.png`;
 }
 
 function renderEquipo(equipo, urlPaste) {
   if (!equipo || equipo.length === 0) return '';
   return `<div class="equipo-sprites">
-    ${equipo.map(p => `
+    ${equipo.map(p => {
+      const s = p.sprite || p.id;
+      return `
       <a href="${escHtml(urlPaste)}" target="_blank" rel="noopener" class="sprite-link" title="${escHtml(p.nombre)}">
-        <img src="${spriteUrl(p.sprite)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
-      </a>
-    `).join('')}
+        <img src="${spriteUrl(s)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
+      </a>`;
+    }).join('')}
   </div>`;
 }
 
