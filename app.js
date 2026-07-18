@@ -78,7 +78,7 @@ const POKEDEX = {
   barbaracle:690,dragalge:692,clawitzer:694,heliolisk:696,tyrantrum:698,
   aurorus:700,sylveon:701,hawlucha:702,goodra:707,klefki:708,
   trevenant:710,gourgeist:712,avalugg:714,noivern:716,xerneas:717,
-  yveltal:718,zygarde:719,diancie:720,hoopa:721,
+  yveltal:718,zygarde:719,diancie:720,hoopa:721,floette:670,
   // Gen 7
   decidueye:723,incineroar:727,primarina:730,toucannon:733,gumshoos:735,
   vikavolt:738,crabominable:740,ribombee:743,lycanroc:745,wishiwashi:746,
@@ -118,7 +118,7 @@ const POKEDEX = {
   frigibax:996,baxcalibur:998,gholdengo:1000,
   "wo-chien":1001,"chien-pao":1002,"ting-lu":1003,"chi-yu":1004,
   "roaring moon":1005,"iron valiant":1006,koraidon:1007,miraidon:1008,
-  "walking wake":1009,"iron leaves":1010,sinistcha:1013,
+  "walking wake":1009,"iron leaves":1010,sinistcha:1013,"sinistcha masterpiece":1013,
   okidogi:1014,munkidori:1015,fezandipiti:1016,ogerpon:1017,
   archaludon:1018,hydrapple:1019,"gouging fire":1020,
   "raging bolt":1021,"iron boulder":1022,"iron crown":1023,
@@ -130,6 +130,7 @@ const POKEDEX = {
   "basculegion (f)": "other/home/10248.png",
   "indeedee (m)": "other/home/876.png",
   "indeedee (f)": "other/home/10186.png",
+  "floette eternal": "other/home/10061.png",
   "urshifu rapid strike": 892,
 };
 
