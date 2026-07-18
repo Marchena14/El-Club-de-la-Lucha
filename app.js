@@ -128,33 +128,58 @@ const POKEDEX = {
 
 // --- UTILIDADES ---
 const DB = {
+  _supabase: null,
   _cache: { sesiones: [], deberes: [] },
-  _sha: null,
   _cargado: false,
 
   get(clave) {
     return this._cache[clave] || [];
   },
 
-  set(clave, datos) {
+  async set(clave, datos) {
     this._cache[clave] = datos;
     localStorage.setItem('club_cache', JSON.stringify(this._cache));
-    this._guardarGitHub();
+    await this._syncSupabase(clave, datos);
+  },
+
+  async _syncSupabase(clave, datos) {
+    if (!this._supabase) return;
+    mostrarEstado('loading', 'Guardando en Supabase...');
+    try {
+      const tabla = clave;
+      await this._supabase.from(tabla).delete().neq('id', '__nonexistent__');
+      if (datos.length > 0) {
+        const insertar = datos.map(d => {
+          const row = { ...d };
+          if (row.fechaLimite !== undefined) {
+            row.fecha_limite = row.fechaLimite;
+            delete row.fechaLimite;
+          }
+          return row;
+        });
+        const { error } = await this._supabase.from(tabla).insert(insertar);
+        if (error) throw error;
+      }
+      mostrarEstado('ok', 'Guardado correctamente');
+    } catch (e) {
+      console.error('Error Supabase:', e);
+      mostrarEstado('error', 'Error al guardar: ' + e.message);
+    }
   },
 
   async cargar() {
     const config = this._getConfig();
-    // Intentar cargar del GitHub
     if (config) {
+      this._supabase = supabase.createClient(config.url, config.anonKey);
       try {
-        await this._cargarDesdeGitHub(config);
+        await this._cargarDesdeSupabase();
         this._cargado = true;
         return;
       } catch (e) {
-        console.warn('GitHub:', e);
+        console.warn('Supabase:', e);
+        this._supabase = null;
       }
     }
-    // Fallback: caché local
     const cache = localStorage.getItem('club_cache');
     if (cache) {
       try { this._cache = JSON.parse(cache); } catch {}
@@ -162,76 +187,34 @@ const DB = {
     this._cargado = true;
   },
 
-  async _cargarDesdeGitHub(config) {
-    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.rama}`;
-    const headers = { 'Accept': 'application/vnd.github.v3+json' };
-    if (config.token) headers['Authorization'] = `token ${config.token}`;
-    const resp = await fetch(url, { headers });
-    if (!resp.ok) throw new Error(resp.status);
-    const data = await resp.json();
-    this._sha = data.sha;
-    const contenido = JSON.parse(atob(data.content));
-    this._cache = { sesiones: contenido.sesiones || [], deberes: contenido.deberes || [] };
-    localStorage.setItem('club_cache', JSON.stringify(this._cache));
-  },
-
-  async _guardarGitHub() {
-    const config = this._getConfig();
-    if (!config) return;
-    // Si no tenemos SHA, intentar obtenerlo
-    if (!this._sha) {
-      try {
-        const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.rama}`;
-        const resp = await fetch(url, {
-          headers: { 'Accept': 'application/vnd.github.v3+json' }
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          this._sha = data.sha;
-        }
-      } catch {}
-    }
-    if (!this._sha) {
-      mostrarEstado('error', 'No se pudo conectar con GitHub. Guardado solo local.');
-      return;
-    }
-    mostrarEstado('loading', 'Guardando en GitHub...');
-    try {
-      const contenido = JSON.stringify(this._cache, null, 2);
-      const resp = await fetch(
-        `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json`,
-        {
-          method: 'PUT',
-          headers: {
-            'Accept': 'application/vnd.github.v3+json',
-            'Authorization': `token ${config.token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            message: `Actualizar datos - ${new Date().toLocaleString('es')}`,
-            content: btoa(unescape(encodeURIComponent(contenido))),
-            sha: this._sha,
-            branch: config.rama
-          })
-        }
-      );
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.message || resp.status);
+  async _cargarDesdeSupabase() {
+    const [sesionesRes, deberesRes] = await Promise.all([
+      this._supabase.from('sesiones').select('*').order('fecha', { ascending: false }),
+      this._supabase.from('deberes').select('*')
+    ]);
+    if (sesionesRes.error) throw sesionesRes.error;
+    if (deberesRes.error) throw deberesRes.error;
+    this._cache.sesiones = (sesionesRes.data || []).map(s => {
+      if (s.fecha_limite !== undefined) {
+        s.fechaLimite = s.fecha_limite;
+        delete s.fecha_limite;
       }
-      const data = await resp.json();
-      this._sha = data.content.sha;
-      mostrarEstado('ok', 'Guardado correctamente');
-    } catch (e) {
-      console.error('Error guardando:', e);
-      mostrarEstado('error', 'Error al guardar: ' + e.message);
-    }
+      return s;
+    });
+    this._cache.deberes = (deberesRes.data || []).map(d => {
+      if (d.fecha_limite !== undefined) {
+        d.fechaLimite = d.fecha_limite;
+        delete d.fecha_limite;
+      }
+      return d;
+    });
+    localStorage.setItem('club_cache', JSON.stringify(this._cache));
   },
 
   _getConfig() {
     try {
       const c = JSON.parse(localStorage.getItem('club_config'));
-      if (c && c.owner && c.repo && c.token) return c;
+      if (c && c.url && c.anonKey) return c;
     } catch {}
     return null;
   },
@@ -270,16 +253,14 @@ function mostrarEstado(tipo, mensaje) {
   }
 }
 
-// --- CONFIG GITHUB ---
+// --- CONFIG SUPABASE ---
 const Config = {
   abrirModal() {
     const modal = document.getElementById('modal-config');
     const config = DB._getConfig();
     if (config) {
-      document.getElementById('config-owner').value = config.owner;
-      document.getElementById('config-repo').value = config.repo;
-      document.getElementById('config-token').value = config.token;
-      document.getElementById('config-rama').value = config.rama || 'main';
+      document.getElementById('config-url').value = config.url;
+      document.getElementById('config-anon-key').value = config.anonKey;
     }
     modal.style.display = 'flex';
   },
@@ -289,28 +270,15 @@ const Config = {
   async guardar(e) {
     e.preventDefault();
     const config = {
-      owner: document.getElementById('config-owner').value.trim(),
-      repo: document.getElementById('config-repo').value.trim(),
-      token: document.getElementById('config-token').value.trim(),
-      rama: document.getElementById('config-rama').value.trim() || 'main'
+      url: document.getElementById('config-url').value.trim(),
+      anonKey: document.getElementById('config-anon-key').value.trim()
     };
     localStorage.setItem('club_config', JSON.stringify(config));
-    DB._sha = null;
+    DB._supabase = supabase.createClient(config.url, config.anonKey);
     this.cerrarModal();
-    mostrarEstado('loading', 'Conectando con GitHub...');
+    mostrarEstado('loading', 'Conectando con Supabase...');
     try {
-      // Obtener el SHA actual del archivo
-      const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.rama}`;
-      const resp = await fetch(url, {
-        headers: { 'Accept': 'application/vnd.github.v3+json' }
-      });
-      if (!resp.ok) throw new Error(`No se pudo acceder al repo (${resp.status}). Verifica los datos.`);
-      const data = await resp.json();
-      DB._sha = data.sha;
-      // Cargar contenido actual
-      const contenido = JSON.parse(atob(data.content));
-      DB._cache = { sesiones: contenido.sesiones || [], deberes: contenido.deberes || [] };
-      localStorage.setItem('club_cache', JSON.stringify(DB._cache));
+      await DB._cargarDesdeSupabase();
       mostrarEstado('ok', 'Conectado correctamente');
       Sesiones.render();
       Deberes.render();
@@ -712,6 +680,12 @@ function escHtml(str) {
 
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!DB._getConfig()) {
+    localStorage.setItem('club_config', JSON.stringify({
+      url: 'https://kckiulvymfzcbklccidq.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtja2l1bHZ5bWZ6Y2JrbGNjaWRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzU3NTYsImV4cCI6MjA5OTk1MTc1Nn0.8mGqAYrLD0hsmNv0NdBoybRuX8LkQWJsFZA223wP6nY'
+    }));
+  }
   await DB.cargar();
   Sesiones.init();
   Deberes.init();

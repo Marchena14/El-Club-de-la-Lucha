@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>El Club de la Lucha - VGC Competitivo</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header class="header">
@@ -19,7 +20,7 @@
       <nav class="nav">
         <button class="nav-btn active" data-section="sesiones">Sesiones</button>
         <button class="nav-btn" data-section="deberes">Deberes</button>
-        <button class="nav-btn-icon" onclick="Config.abrirModal()" title="Configuración GitHub">&#9881;</button>
+        <button class="nav-btn-icon" onclick="Config.abrirModal()" title="Configuraci\u00f3n Supabase">&#9881;</button>
       </nav>
     </div>
   </header>
@@ -159,31 +160,23 @@
     </div>
   </div>
 
-  <!-- MODAL CONFIG GITHUB -->
+  <!-- MODAL CONFIG SUPABASE -->
   <div id="modal-config" class="modal" style="display:none;">
     <div class="modal-overlay" onclick="Config.cerrarModal()"></div>
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Configuración GitHub</h3>
+        <h3>Configuraci\u00f3n Supabase</h3>
         <button class="modal-close" onclick="Config.cerrarModal()">&times;</button>
       </div>
       <form id="form-config" onsubmit="Config.guardar(event)">
-        <p class="config-info">Conecta tu repo de GitHub para guardar los datos en la nube. Necesitas un <a href="https://github.com/settings/tokens" target="_blank">token de GitHub</a> con permisos de repositorio.</p>
+        <p class="config-info">Conecta tu proyecto de Supabase para guardar los datos en la nube. Necesitas la URL y la anon key de tu proyecto.</p>
         <div class="form-group">
-          <label for="config-owner">Propietario del repo</label>
-          <input type="text" id="config-owner" placeholder="Ej: mi-usuario" required>
+          <label for="config-url">URL del proyecto</label>
+          <input type="url" id="config-url" placeholder="https://xxxxx.supabase.co" required>
         </div>
         <div class="form-group">
-          <label for="config-repo">Nombre del repo</label>
-          <input type="text" id="config-repo" placeholder="Ej: el-club-de-la-lucha" required>
-        </div>
-        <div class="form-group">
-          <label for="config-token">Token de GitHub</label>
-          <input type="password" id="config-token" placeholder="ghp_..." required>
-        </div>
-        <div class="form-group">
-          <label for="config-rama">Rama (opcional)</label>
-          <input type="text" id="config-rama" placeholder="main" value="main">
+          <label for="config-anon-key">Anon Key</label>
+          <input type="password" id="config-anon-key" placeholder="eyJhbG..." required>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="Config.cerrarModal()">Cancelar</button>
