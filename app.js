@@ -331,9 +331,8 @@ function parsearPoképaste(texto) {
     let forma = null;
     const mMatch = limpio.match(/\s*\((M|F)\)\s*|[♂♀]/);
     if (mMatch) {
-      const marker = mMatch[0];
-      if (marker === '(M)' || marker === '♂') forma = '(m)';
-      else if (marker === '(F)' || marker === '♀') forma = '(f)';
+      if (mMatch[1]) forma = mMatch[1] === 'M' ? '(m)' : '(f)';
+      else forma = mMatch[0] === '♂' ? '(m)' : '(f)';
     }
     limpio = limpio.replace(/\s*\([MF]\)\s*/g, '').trim();
     limpio = limpio.replace(/[♂♀]/g, '').trim();
