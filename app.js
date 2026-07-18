@@ -314,21 +314,17 @@ function normalizarNombre(str) {
 
 function parsearPoképaste(texto) {
   if (!texto) return [];
-  const bloques = texto.split(/\n\s*\n/);
   const nombres = [];
-  for (const bloque of bloques) {
-    const primeraLinea = bloque.split('\n')[0].trim();
-    if (!primeraLinea) continue;
-    // Quitar @ item si está al final
-    let limpio = primeraLinea.split('@')[0].trim();
-    // Quitar (M) / (F)
+  const lineas = texto.split('\n');
+  for (const linea of lineas) {
+    const trimmed = linea.trim();
+    if (!trimmed) continue;
+    if (!trimmed.includes('@')) continue;
+    let limpio = trimmed.split('@')[0].trim();
     limpio = limpio.replace(/\s*\([MF]\)\s*/g, '').trim();
-    // Quitar género unicode
     limpio = limpio.replace(/[♂♀]/g, '').trim();
-    // Primer token es el nombre
     const token = limpio.split(/\s+/)[0];
     const nombreNormalizado = normalizarNombre(limpio);
-    // Buscar en pokedex (primero nombre completo normalizado, luego solo primer token)
     const id = POKEDEX[nombreNormalizado] || POKEDEX[normalizarNombre(token)];
     if (id) {
       nombres.push({ nombre: limpio, id });
