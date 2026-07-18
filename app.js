@@ -386,6 +386,42 @@ function reparsearEquipo(raw, equipoGuardado) {
   });
 }
 
+function claseKo(texto) {
+  const t = texto.toLowerCase();
+  if (/ohko/i.test(t)) return 'ko-ohko';
+  if (/2hko/i.test(t)) return 'ko-2hko';
+  if (/3hko/i.test(t)) return 'ko-3hko';
+  if (/4hko/i.test(t)) return 'ko-4hko';
+  return 'ko-other';
+}
+
+function renderLineasCalc(texto) {
+  if (!texto || !texto.trim()) return '<div class="calcs-empty">Sin cálculos</div>';
+  return texto.trim().split('\n').filter(l => l.trim()).map(linea => {
+    const cls = claseKo(linea);
+    return `<div class="calcs-line ${cls}">${escHtml(linea.trim())}</div>`;
+  }).join('');
+}
+
+function toggleEditCalc(sesionId, pokemonIdx, campo) {
+  const lines = document.getElementById(`calcs-lines-${sesionId}-${pokemonIdx}-${campo}`);
+  const area = document.getElementById(`calcs-area-${sesionId}-${pokemonIdx}-${campo}`);
+  const btn = document.getElementById(`calcs-btn-${sesionId}-${pokemonIdx}-${campo}`);
+  if (!lines || !area) return;
+  const editando = area.style.display === 'block';
+  if (editando) {
+    area.style.display = 'none';
+    lines.classList.remove('hidden');
+    btn.textContent = 'Editar';
+    lines.innerHTML = renderLineasCalc(area.value);
+  } else {
+    area.style.display = 'block';
+    lines.classList.add('hidden');
+    btn.textContent = 'Ver';
+    area.focus();
+  }
+}
+
 function spriteUrl(sprite) {
   const BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
   if (typeof sprite === 'string') return BASE + sprite;
@@ -422,14 +458,20 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
       </div>
       <div class="calcs-cols">
         <div class="calcs-col">
-          <label>Ofensivo</label>
-          <textarea rows="6" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
-            onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
+          <label>Ofensivo <button type="button" class="btn-edit-calcs" id="calcs-btn-${sesionId}-${i}-calcsOfensivo" onclick="toggleEditCalc('${sesionId}', ${i}, 'calcsOfensivo')">Editar</button></label>
+          <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsOfensivo">${renderLineasCalc(p.calcsOfensivo)}</div>
+          <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsOfensivo">
+            <textarea rows="6" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
+              onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
+          </div>
         </div>
         <div class="calcs-col">
-          <label>Defensivo</label>
-          <textarea rows="6" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
-            onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
+          <label>Defensivo <button type="button" class="btn-edit-calcs" id="calcs-btn-${sesionId}-${i}-calcsDefensivo" onclick="toggleEditCalc('${sesionId}', ${i}, 'calcsDefensivo')">Editar</button></label>
+          <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsDefensivo">${renderLineasCalc(p.calcsDefensivo)}</div>
+          <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsDefensivo">
+            <textarea rows="6" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
+              onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
+          </div>
         </div>
       </div>
     </div>`;

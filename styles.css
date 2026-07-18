@@ -409,7 +409,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .calcs-sprite {
@@ -426,17 +426,85 @@ body {
 .calcs-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .calcs-col label {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.4rem;
+}
+
+.calcs-col label .btn-edit-calcs {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.calcs-col label .btn-edit-calcs:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.calcs-lines {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem;
+  min-height: 4rem;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.78rem;
+  line-height: 1.8;
+}
+
+.calcs-line {
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.calcs-line:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.calcs-line.ko-ohko { color: #e63946; font-weight: 700; }
+.calcs-line.ko-2hko { color: #f4a261; }
+.calcs-line.ko-3hko { color: #e9c46a; }
+.calcs-line.ko-4hko { color: #2a9d8f; }
+.calcs-line.ko-other { color: var(--text-muted); }
+
+.calcs-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.78rem;
+  padding: 0.5rem;
+}
+
+.calcs-edit-area {
+  display: none;
+}
+
+.calcs-edit-area.active {
+  display: block;
+}
+
+.calcs-lines.hidden {
+  display: none;
 }
 
 .calcs-col textarea {
@@ -446,11 +514,12 @@ body {
   color: var(--text-primary);
   padding: 0.5rem;
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   resize: vertical;
   transition: var(--transition);
-  min-height: 6rem;
+  min-height: 8rem;
+  line-height: 1.6;
 }
 
 .calcs-col textarea:focus {
