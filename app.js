@@ -371,19 +371,27 @@ function extraerYouTubeId(url) {
 }
 
 // --- SPRITES ---
-function reparsearEquipo(raw, equipoGuardado) {
+function reparsearEquipo(raw, equipoGuardado, calcsObj) {
   if (!raw) return equipoGuardado || [];
   const nuevo = parsearPoképaste(raw);
-  if (!equipoGuardado || equipoGuardado.length === 0) return nuevo;
-  const antiguo = new Map(equipoGuardado.map(p => [p.nombre, p]));
-  return nuevo.map(p => {
-    const old = antiguo.get(p.nombre);
-    if (old) {
-      p.calcsOfensivo = old.calcsOfensivo || '';
-      p.calcsDefensivo = old.calcsDefensivo || '';
-    }
-    return p;
+  const calcs = calcsObj || {};
+  if (equipoGuardado && equipoGuardado.length > 0) {
+    const antiguo = new Map(equipoGuardado.map(p => [p.nombre, p]));
+    nuevo.forEach(p => {
+      const old = antiguo.get(p.nombre);
+      if (old && !calcs[p.nombre]) {
+        calcs[p.nombre] = {};
+        if (old.calcsOfensivo) calcs[p.nombre].o = old.calcsOfensivo;
+        if (old.calcsDefensivo) calcs[p.nombre].d = old.calcsDefensivo;
+      }
+    });
+  }
+  nuevo.forEach(p => {
+    const pc = calcs[p.nombre] || {};
+    p.calcsOfensivo = pc.o || '';
+    p.calcsDefensivo = pc.d || '';
   });
+  return nuevo;
 }
 
 function claseKo(texto) {
@@ -404,12 +412,15 @@ function renderLineasCalc(texto) {
 }
 
 function toggleEditCalc(sesionId, pokemonIdx, campo) {
+  const panel = document.getElementById(`calcs-${sesionId}-${pokemonIdx}`);
   const lines = document.getElementById(`calcs-lines-${sesionId}-${pokemonIdx}-${campo}`);
   const area = document.getElementById(`calcs-area-${sesionId}-${pokemonIdx}-${campo}`);
   const btn = document.getElementById(`calcs-btn-${sesionId}-${pokemonIdx}-${campo}`);
   if (!lines || !area) return;
   const editando = area.style.display === 'block';
   if (editando) {
+    const nombre = panel?.dataset?.nombre || '';
+    Sesiones.guardarCalcs(sesionId, nombre, campo, area.value);
     area.style.display = 'none';
     lines.classList.remove('hidden');
     btn.textContent = 'Editar';
@@ -451,7 +462,8 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
 
   const calcsHtml = equipo.map((p, i) => {
     const s = p.sprite || p.id;
-    return `<div class="calcs-panel" id="calcs-${sesionId}-${i}" style="display:none">
+    const nombreAttr = escHtml(p.nombre).replace(/'/g, '&#39;');
+    return `<div class="calcs-panel" id="calcs-${sesionId}-${i}" data-nombre="${nombreAttr}" style="display:none">
       <div class="calcs-header">
         <img src="${spriteUrl(s)}" class="calcs-sprite" alt="${escHtml(p.nombre)}">
         <span class="calcs-name">${escHtml(p.nombre)}</span>
@@ -462,7 +474,7 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
           <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsOfensivo">${renderLineasCalc(p.calcsOfensivo)}</div>
           <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsOfensivo">
             <textarea rows="8" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
-              onblur="Sesiones.guardarCalcs('${sesionId}', '${escHtml(p.nombre).replace(/'/g, "\\'")}', 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
+              onblur="Sesiones.guardarCalcs('${sesionId}', this.closest('.calcs-panel').dataset.nombre, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
           </div>
         </div>
         <div class="calcs-col">
@@ -470,7 +482,7 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
           <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsDefensivo">${renderLineasCalc(p.calcsDefensivo)}</div>
           <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsDefensivo">
             <textarea rows="8" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
-              onblur="Sesiones.guardarCalcs('${sesionId}', '${escHtml(p.nombre).replace(/'/g, "\\'")}', 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
+              onblur="Sesiones.guardarCalcs('${sesionId}', this.closest('.calcs-panel').dataset.nombre, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
           </div>
         </div>
       </div>
@@ -527,6 +539,13 @@ const Sesiones = {
     document.getElementById('campos-practica').style.display = tipo === 'practica' ? '' : 'none';
   },
 
+  toggleExpand(btn) {
+    const card = btn.closest('.card');
+    if (!card) return;
+    card.classList.toggle('card-expanded');
+    btn.innerHTML = card.classList.contains('card-expanded') ? '&#x26F7;' : '&#x26F6;';
+  },
+
   obtener() {
     return DB.get('sesiones').sort((a, b) => b.fecha.localeCompare(a.fecha));
   },
@@ -552,6 +571,7 @@ const Sesiones = {
         <div class="card-top">
           <span class="card-badge badge-${s.tipo}">${s.tipo === 'teorica' ? 'Te\u00f3rica' : 'Pr\u00e1ctica'}</span>
           <div class="card-actions">
+            <button class="btn btn-icon" onclick="Sesiones.toggleExpand(this)" title="Ampliar">&#x26F6;</button>
             <button class="btn btn-icon" onclick="Sesiones.editar('${s.id}')" title="Editar">&#9998;</button>
             <button class="btn btn-icon danger" onclick="Sesiones.eliminar('${s.id}')" title="Eliminar">&#10005;</button>
           </div>
@@ -560,7 +580,7 @@ const Sesiones = {
         <div class="card-title">${escHtml(s.tema)}</div>
         ${s.descripcion ? `<div class="card-desc">${renderDescripcion(s.descripcion)}</div>` : ''}
         ${(s.pokepastes || []).map(p => `
-          ${renderEquipo(reparsearEquipo(p.raw, p.equipo), p.url, s.tipo, s.id)}
+          ${renderEquipo(reparsearEquipo(p.raw, p.equipo, p.calcs), p.url, s.tipo, s.id)}
           ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
         `).join('')}
         ${renderReplays(s.replays)}
@@ -619,29 +639,22 @@ const Sesiones = {
   toggleCalcs(sesionId, idx) {
     const panel = document.getElementById(`calcs-${sesionId}-${idx}`);
     if (!panel) return;
-    const card = panel.closest('.card');
     document.querySelectorAll(`[id^="calcs-${sesionId}-"]`).forEach(p => {
       if (p.id !== `calcs-${sesionId}-${idx}`) p.style.display = 'none';
     });
-    const abriendo = panel.style.display === 'none';
-    panel.style.display = abriendo ? 'block' : 'none';
-    if (card) {
-      card.classList.toggle('card-expanded', abriendo);
-      if (abriendo) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
   },
 
   async guardarCalcs(sesionId, pokemonNombre, campo, valor) {
+    if (!pokemonNombre) return;
     const sesiones = this.obtener();
     const s = sesiones.find(x => x.id === sesionId);
-    const eq = s?.pokepastes?.[0]?.equipo;
-    if (eq) {
-      const poke = eq.find(p => p.nombre === pokemonNombre);
-      if (poke) {
-        poke[campo] = valor;
-        await DB.set('sesiones', sesiones);
-      }
-    }
+    const pp = s?.pokepastes?.[0];
+    if (!pp) return;
+    if (!pp.calcs) pp.calcs = {};
+    if (!pp.calcs[pokemonNombre]) pp.calcs[pokemonNombre] = {};
+    pp.calcs[pokemonNombre][campo === 'calcsOfensivo' ? 'o' : 'd'] = valor;
+    await DB.set('sesiones', sesiones);
   },
 
   agregarReplay(label, url) {
@@ -763,7 +776,7 @@ const Deberes = {
           <div class="deber-titulo">${escHtml(d.titulo)}</div>
           ${d.descripcion ? `<div class="deber-desc">${renderDescripcion(d.descripcion)}</div>` : ''}
           ${(d.pokepastes || []).map(p => `
-            ${renderEquipo(reparsearEquipo(p.raw, p.equipo), p.url)}
+            ${renderEquipo(reparsearEquipo(p.raw, p.equipo, p.calcs), p.url)}
             ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
           `).join('')}
           <div class="deber-meta">
