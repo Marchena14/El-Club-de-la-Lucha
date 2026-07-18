@@ -124,6 +124,13 @@ const POKEDEX = {
   "raging bolt":1021,"iron boulder":1022,"iron crown":1023,
   terapagos:1024,basculegion:902,ursaluna:901,sneasler:903,
   overqwil:904,
+
+  // Formas con sprites propios (paths relativos a sprites/pokemon/)
+  "basculegion (m)": "other/home/902.png",
+  "basculegion (f)": "other/home/10248.png",
+  "indeedee (m)": "other/home/876.png",
+  "indeedee (f)": "other/home/10186.png",
+  "urshifu rapid strike": 892,
 };
 
 // --- UTILIDADES ---
@@ -321,13 +328,22 @@ function parsearPoképaste(texto) {
     if (!trimmed) continue;
     if (!trimmed.includes('@')) continue;
     let limpio = trimmed.split('@')[0].trim();
+    let forma = null;
+    const mMatch = limpio.match(/\s*\((M|F)\)\s*|[♂♀]/);
+    if (mMatch) {
+      const marker = mMatch[0];
+      if (marker === '(M)' || marker === '♂') forma = '(m)';
+      else if (marker === '(F)' || marker === '♀') forma = '(f)';
+    }
     limpio = limpio.replace(/\s*\([MF]\)\s*/g, '').trim();
     limpio = limpio.replace(/[♂♀]/g, '').trim();
     const token = limpio.split(/\s+/)[0];
-    const nombreNormalizado = normalizarNombre(limpio);
-    const id = POKEDEX[nombreNormalizado] || POKEDEX[normalizarNombre(token)];
-    if (id) {
-      nombres.push({ nombre: limpio, id });
+    const baseNorm = normalizarNombre(limpio);
+    const tokenNorm = normalizarNombre(token);
+    const claveForma = forma ? baseNorm + ' ' + forma : null;
+    const sprite = (claveForma && POKEDEX[claveForma]) || POKEDEX[baseNorm] || POKEDEX[tokenNorm];
+    if (sprite) {
+      nombres.push({ nombre: limpio, sprite });
     }
   }
   return nombres;
@@ -350,9 +366,10 @@ function extraerYouTubeId(url) {
 }
 
 // --- SPRITES ---
-function spriteUrl(id) {
-  // Usamos los sprites regulares que cubren todos los Pokémon
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+function spriteUrl(sprite) {
+  const BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+  if (typeof sprite === 'string') return BASE + sprite;
+  return `${BASE}${sprite}.png`;
 }
 
 function renderEquipo(equipo, urlPaste) {
@@ -360,7 +377,7 @@ function renderEquipo(equipo, urlPaste) {
   return `<div class="equipo-sprites">
     ${equipo.map(p => `
       <a href="${escHtml(urlPaste)}" target="_blank" rel="noopener" class="sprite-link" title="${escHtml(p.nombre)}">
-        <img src="${spriteUrl(p.id)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
+        <img src="${spriteUrl(p.sprite)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
       </a>
     `).join('')}
   </div>`;
