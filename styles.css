@@ -392,6 +392,127 @@ body {
   image-rendering: pixelated;
 }
 
+.sprite-clickable {
+  cursor: pointer;
+}
+
+/* CALCS PANEL */
+.calcs-panel {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.calcs-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.calcs-sprite {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.calcs-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.calcs-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.calcs-col label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.calcs-col textarea {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: var(--transition);
+}
+
+.calcs-col textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* REPLAYS */
+.card-replays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.card-replays-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.replay-link {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  transition: var(--transition);
+}
+
+.replay-link:hover {
+  background: rgba(230, 57, 70, 0.25);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.replay-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.replay-row input[type="text"] {
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.replay-row input[type="url"] {
+  flex: 1;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
 /* YOUTUBE EMBED */
 .youtube-embed {
   position: relative;
@@ -750,5 +871,17 @@ form {
   .deber-item {
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .calcs-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .replay-row {
+    flex-wrap: wrap;
+  }
+
+  .replay-row input[type="text"] {
+    width: 100%;
   }
 }

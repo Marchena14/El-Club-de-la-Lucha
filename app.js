@@ -347,7 +347,7 @@ function parsearPoképaste(texto) {
     const claveForma = forma ? baseNorm + ' ' + forma : null;
     const sprite = (claveForma && POKEDEX[claveForma]) || POKEDEX[baseNorm] || POKEDEX[tokenNorm];
     if (sprite) {
-      nombres.push({ nombre: limpio, sprite });
+      nombres.push({ nombre: limpio, sprite, calcsOfensivo: '', calcsDefensivo: '' });
     }
   }
   return nombres;
@@ -377,16 +377,58 @@ function spriteUrl(sprite) {
   return `${BASE}0.png`;
 }
 
-function renderEquipo(equipo, urlPaste) {
+function renderEquipo(equipo, urlPaste, tipo, sesionId) {
   if (!equipo || equipo.length === 0) return '';
-  return `<div class="equipo-sprites">
-    ${equipo.map(p => {
+  const esPractica = tipo === 'practica';
+
+  const spritesHtml = `<div class="equipo-sprites">
+    ${equipo.map((p, i) => {
       const s = p.sprite || p.id;
-      return `
-      <a href="${escHtml(urlPaste)}" target="_blank" rel="noopener" class="sprite-link" title="${escHtml(p.nombre)}">
+      if (esPractica) {
+        return `<div class="sprite-link sprite-clickable" title="${escHtml(p.nombre)}" onclick="Sesiones.toggleCalcs('${sesionId}', ${i})">
+          <img src="${spriteUrl(s)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
+        </div>`;
+      }
+      return `<a href="${escHtml(urlPaste)}" target="_blank" rel="noopener" class="sprite-link" title="${escHtml(p.nombre)}">
         <img src="${spriteUrl(s)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
       </a>`;
     }).join('')}
+  </div>`;
+
+  if (!esPractica) return spritesHtml;
+
+  const calcsHtml = equipo.map((p, i) => {
+    const s = p.sprite || p.id;
+    return `<div class="calcs-panel" id="calcs-${sesionId}-${i}" style="display:none">
+      <div class="calcs-header">
+        <img src="${spriteUrl(s)}" class="calcs-sprite" alt="${escHtml(p.nombre)}">
+        <span class="calcs-name">${escHtml(p.nombre)}</span>
+      </div>
+      <div class="calcs-cols">
+        <div class="calcs-col">
+          <label>Ofensivo</label>
+          <textarea rows="3" placeholder="Flare Blitz vs. 252 HP Amoonguss: 88-104 (40.5-48.1%)"
+            onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
+        </div>
+        <div class="calcs-col">
+          <label>Defensivo</label>
+          <textarea rows="3" placeholder="Shadow Ball from Gholdengo: 68-80 (33-39%)"
+            onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return spritesHtml + calcsHtml;
+}
+
+function renderReplays(replays) {
+  if (!replays || replays.length === 0) return '';
+  return `<div class="card-replays">
+    <span class="card-replays-label">&#127918; Replays:</span>
+    ${replays.map(r =>
+      `<a href="${escHtml(r.url)}" target="_blank" rel="noopener" class="replay-link">${escHtml(r.label)}</a>`
+    ).join('')}
   </div>`;
 }
 
@@ -454,9 +496,10 @@ const Sesiones = {
         <div class="card-title">${escHtml(s.tema)}</div>
         ${s.descripcion ? `<div class="card-desc">${renderDescripcion(s.descripcion)}</div>` : ''}
         ${(s.pokepastes || []).map(p => `
-          ${renderEquipo(p.equipo, p.url)}
+          ${renderEquipo(p.equipo, p.url, s.tipo, s.id)}
           ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
         `).join('')}
+        ${renderReplays(s.replays)}
         ${s.youtube ? renderYouTube(s.youtube) : ''}
         <div class="card-meta">
           ${s.asistentes ? `<span>&#128101; ${escHtml(s.asistentes)}</span>` : ''}
@@ -485,10 +528,20 @@ const Sesiones = {
         document.getElementById('sesion-pokepaste-url').value = (s.pokepastes && s.pokepastes[0]) ? s.pokepastes[0].url || '' : '';
         document.getElementById('sesion-pokepaste-content').value = (s.pokepastes && s.pokepastes[0]) ? s.pokepastes[0].raw || '' : '';
         document.getElementById('sesion-asistentes').value = s.asistentes || '';
+        const replaysContainer = document.getElementById('replays-list');
+        replaysContainer.innerHTML = '';
+        if (s.replays && s.replays.length > 0) {
+          s.replays.forEach(r => this.agregarReplay(r.label, r.url));
+        } else {
+          this.agregarReplay();
+        }
       }
     } else {
       titulo.textContent = 'Nueva Sesi\u00f3n';
       document.getElementById('sesion-fecha').value = new Date().toISOString().slice(0, 10);
+      const replaysContainer = document.getElementById('replays-list');
+      replaysContainer.innerHTML = '';
+      this.agregarReplay();
     }
 
     modal.style.display = 'flex';
@@ -496,6 +549,36 @@ const Sesiones = {
 
   cerrarModal() {
     document.getElementById('modal-sesion').style.display = 'none';
+  },
+
+  toggleCalcs(sesionId, idx) {
+    const panel = document.getElementById(`calcs-${sesionId}-${idx}`);
+    if (!panel) return;
+    document.querySelectorAll(`[id^="calcs-${sesionId}-"]`).forEach(p => {
+      if (p.id !== `calcs-${sesionId}-${idx}`) p.style.display = 'none';
+    });
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  },
+
+  async guardarCalcs(sesionId, pokemonIdx, campo, valor) {
+    const sesiones = DB.get('sesiones');
+    const s = sesiones.find(x => x.id === sesionId);
+    if (s?.pokepastes?.[0]?.equipo?.[pokemonIdx]) {
+      s.pokepastes[0].equipo[pokemonIdx][campo] = valor;
+      await DB.set('sesiones', sesiones);
+    }
+  },
+
+  agregarReplay(label, url) {
+    const container = document.getElementById('replays-list');
+    const row = document.createElement('div');
+    row.className = 'replay-row';
+    row.innerHTML = `
+      <input type="text" class="replay-label" placeholder="G1" value="${escHtml(label || '')}">
+      <input type="url" class="replay-url" placeholder="https://replay.pokemonshowdown.com/..." value="${escHtml(url || '')}">
+      <button type="button" class="btn btn-icon danger" onclick="this.closest('.replay-row').remove()">&times;</button>
+    `;
+    container.appendChild(row);
   },
 
   async guardar(e) {
@@ -514,6 +597,14 @@ const Sesiones = {
       });
     }
 
+    const replayRows = document.querySelectorAll('#replays-list .replay-row');
+    const replays = [];
+    replayRows.forEach(row => {
+      const label = row.querySelector('.replay-label').value.trim();
+      const url = row.querySelector('.replay-url').value.trim();
+      if (label || url) replays.push({ label, url });
+    });
+
     const datos = {
       id: id || DB.id(),
       fecha: document.getElementById('sesion-fecha').value,
@@ -522,6 +613,7 @@ const Sesiones = {
       descripcion: document.getElementById('sesion-descripcion').value.trim(),
       youtube: document.getElementById('sesion-youtube').value.trim(),
       pokepastes,
+      replays,
       asistentes: document.getElementById('sesion-asistentes').value.trim()
     };
 
