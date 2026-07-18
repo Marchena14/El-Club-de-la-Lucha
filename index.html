@@ -93,18 +93,20 @@
           <label for="sesion-youtube">Enlace YouTube (opcional)</label>
           <input type="url" id="sesion-youtube" placeholder="https://youtube.com/watch?v=...">
         </div>
-        <div class="form-group">
-          <label>Replays de Showdown</label>
-          <div id="replays-list"></div>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="Sesiones.agregarReplay()">+ Replay</button>
-        </div>
-        <div class="form-group">
-          <label for="sesion-pokepaste-url">Poképaste URL (opcional)</label>
-          <input type="url" id="sesion-pokepaste-url" placeholder="https://pokepast.es/...">
-        </div>
-        <div class="form-group">
-          <label for="sesion-pokepaste-content">Contenido del Poképaste (para mostrar los Pokémon)</label>
-          <textarea id="sesion-pokepaste-content" rows="4" placeholder="Pega aquí el contenido del paste para ver los sprites..."></textarea>
+        <div id="campos-practica" class="campos-practica">
+          <div class="form-group">
+            <label>Replays de Showdown</label>
+            <div id="replays-list"></div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="Sesiones.agregarReplay()">+ Replay</button>
+          </div>
+          <div class="form-group">
+            <label for="sesion-pokepaste-url">Poképaste URL (opcional)</label>
+            <input type="url" id="sesion-pokepaste-url" placeholder="https://pokepast.es/...">
+          </div>
+          <div class="form-group">
+            <label for="sesion-pokepaste-content">Contenido del Poképaste (para mostrar los Pokémon)</label>
+            <textarea id="sesion-pokepaste-content" rows="4" placeholder="Pega aquí el contenido del paste para ver los sprites..."></textarea>
+          </div>
         </div>
         <div class="form-group">
           <label for="sesion-asistentes">Asistentes (opcional)</label>

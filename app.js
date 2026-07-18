@@ -460,7 +460,13 @@ const Sesiones = {
         this.render();
       });
     });
+    document.getElementById('sesion-tipo').addEventListener('change', () => this.toggleTipo());
     this.render();
+  },
+
+  toggleTipo() {
+    const tipo = document.getElementById('sesion-tipo').value;
+    document.getElementById('campos-practica').style.display = tipo === 'practica' ? '' : 'none';
   },
 
   obtener() {
@@ -545,6 +551,7 @@ const Sesiones = {
     }
 
     modal.style.display = 'flex';
+    this.toggleTipo();
   },
 
   cerrarModal() {
