@@ -152,7 +152,11 @@ const DB = {
     }
   },
 
+  _syncLock: null,
+
   async _syncSupabase(clave, datos) {
+    while (this._syncLock) await new Promise(r => setTimeout(r, 100));
+    this._syncLock = true;
     mostrarEstado('loading', 'Guardando...');
     try {
       const tabla = clave;
@@ -175,6 +179,8 @@ const DB = {
     } catch (e) {
       console.error('Error Supabase:', e);
       mostrarEstado('error', 'Error al guardar: ' + e.message);
+    } finally {
+      this._syncLock = false;
     }
   },
 
