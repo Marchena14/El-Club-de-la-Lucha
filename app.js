@@ -139,26 +139,29 @@ const DB = {
   async set(clave, datos) {
     this._cache[clave] = datos;
     localStorage.setItem('club_cache', JSON.stringify(this._cache));
-    await this._syncSupabase(clave, datos);
+    if (this._supabase) {
+      await this._syncSupabase(clave, datos);
+    }
   },
 
   async _syncSupabase(clave, datos) {
-    if (!this._supabase) return;
-    mostrarEstado('loading', 'Guardando en Supabase...');
+    mostrarEstado('loading', 'Guardando...');
     try {
       const tabla = clave;
-      await this._supabase.from(tabla).delete().neq('id', '__nonexistent__');
+      const { error: delError } = await this._supabase.from(tabla).delete().gte('created_at', '1900-01-01');
+      if (delError) throw delError;
       if (datos.length > 0) {
         const insertar = datos.map(d => {
           const row = { ...d };
+          delete row.created_at;
           if (row.fechaLimite !== undefined) {
-            row.fecha_limite = row.fechaLimite;
+            row.fecha_limite = row.fechaLimite || null;
             delete row.fechaLimite;
           }
           return row;
         });
-        const { error } = await this._supabase.from(tabla).insert(insertar);
-        if (error) throw error;
+        const { error: insError } = await this._supabase.from(tabla).insert(insertar);
+        if (insError) throw insError;
       }
       mostrarEstado('ok', 'Guardado correctamente');
     } catch (e) {
@@ -177,7 +180,7 @@ const DB = {
         return;
       } catch (e) {
         console.warn('Supabase:', e);
-        this._supabase = null;
+        mostrarEstado('error', 'Error conectando con Supabase: ' + e.message);
       }
     }
     const cache = localStorage.getItem('club_cache');
@@ -190,7 +193,7 @@ const DB = {
   async _cargarDesdeSupabase() {
     const [sesionesRes, deberesRes] = await Promise.all([
       this._supabase.from('sesiones').select('*').order('fecha', { ascending: false }),
-      this._supabase.from('deberes').select('*')
+      this._supabase.from('deberes').select('*').order('created_at', { ascending: false })
     ]);
     if (sesionesRes.error) throw sesionesRes.error;
     if (deberesRes.error) throw deberesRes.error;
@@ -213,10 +216,21 @@ const DB = {
 
   _getConfig() {
     try {
-      const c = JSON.parse(localStorage.getItem('club_config'));
+      const raw = localStorage.getItem('club_config');
+      if (!raw) return null;
+      const c = JSON.parse(raw);
       if (c && c.url && c.anonKey) return c;
     } catch {}
     return null;
+  },
+
+  _ensureConfig() {
+    if (!this._getConfig()) {
+      localStorage.setItem('club_config', JSON.stringify({
+        url: 'https://kckiulvymfzcbklccidq.supabase.co',
+        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtja2l1bHZ5bWZ6Y2JrbGNjaWRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzU3NTYsImV4cCI6MjA5OTk1MTc1Nn0.8mGqAYrLD0hsmNv0NdBoybRuX8LkQWJsFZA223wP6nY'
+      }));
+    }
   },
 
   id() {
@@ -464,7 +478,7 @@ const Sesiones = {
     document.getElementById('modal-sesion').style.display = 'none';
   },
 
-  guardar(e) {
+  async guardar(e) {
     e.preventDefault();
     const id = document.getElementById('sesion-id').value;
     const sesiones = this.obtener();
@@ -498,7 +512,7 @@ const Sesiones = {
       sesiones.push(datos);
     }
 
-    DB.set('sesiones', sesiones);
+    await DB.set('sesiones', sesiones);
     this.cerrarModal();
     this.render();
   },
@@ -507,10 +521,10 @@ const Sesiones = {
     this.abrirModal(id);
   },
 
-  eliminar(id) {
+  async eliminar(id) {
     if (!confirm('\u00bfEliminar esta sesi\u00f3n?')) return;
     const sesiones = this.obtener().filter(s => s.id !== id);
-    DB.set('sesiones', sesiones);
+    await DB.set('sesiones', sesiones);
     this.render();
   }
 };
@@ -608,7 +622,7 @@ const Deberes = {
     document.getElementById('modal-deber').style.display = 'none';
   },
 
-  guardar(e) {
+  async guardar(e) {
     e.preventDefault();
     const id = document.getElementById('deber-id').value;
     const deberes = this.obtener();
@@ -644,7 +658,7 @@ const Deberes = {
       deberes.push(datos);
     }
 
-    DB.set('deberes', deberes);
+    await DB.set('deberes', deberes);
     this.cerrarModal();
     this.render();
   },
@@ -653,20 +667,20 @@ const Deberes = {
     this.abrirModal(id);
   },
 
-  toggle(id) {
+  async toggle(id) {
     const deberes = this.obtener();
     const d = deberes.find(x => x.id === id);
     if (d) {
       d.completado = !d.completado;
-      DB.set('deberes', deberes);
+      await DB.set('deberes', deberes);
       this.render();
     }
   },
 
-  eliminar(id) {
+  async eliminar(id) {
     if (!confirm('\u00bfEliminar este deber?')) return;
     const deberes = this.obtener().filter(d => d.id !== id);
-    DB.set('deberes', deberes);
+    await DB.set('deberes', deberes);
     this.render();
   }
 };
@@ -680,12 +694,7 @@ function escHtml(str) {
 
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!DB._getConfig()) {
-    localStorage.setItem('club_config', JSON.stringify({
-      url: 'https://kckiulvymfzcbklccidq.supabase.co',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtja2l1bHZ5bWZ6Y2JrbGNjaWRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzU3NTYsImV4cCI6MjA5OTk1MTc1Nn0.8mGqAYrLD0hsmNv0NdBoybRuX8LkQWJsFZA223wP6nY'
-    }));
-  }
+  DB._ensureConfig();
   await DB.cargar();
   Sesiones.init();
   Deberes.init();
