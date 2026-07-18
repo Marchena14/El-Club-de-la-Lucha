@@ -432,7 +432,7 @@ const Sesiones = {
         </div>
         <div class="card-date">${DB.fechaFormateada(s.fecha)} &middot; ${DB.fechaRelativa(s.fecha)}</div>
         <div class="card-title">${escHtml(s.tema)}</div>
-        ${s.descripcion ? `<div class="card-desc">${escHtml(s.descripcion)}</div>` : ''}
+        ${s.descripcion ? `<div class="card-desc">${renderDescripcion(s.descripcion)}</div>` : ''}
         ${(s.pokepastes || []).map(p => `
           ${renderEquipo(p.equipo, p.url)}
           ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
@@ -574,7 +574,7 @@ const Deberes = {
         <div class="deber-check ${d.completado ? 'checked' : ''}" onclick="Deberes.toggle('${d.id}')"></div>
         <div class="deber-body">
           <div class="deber-titulo">${escHtml(d.titulo)}</div>
-          ${d.descripcion ? `<div class="deber-desc">${escHtml(d.descripcion)}</div>` : ''}
+          ${d.descripcion ? `<div class="deber-desc">${renderDescripcion(d.descripcion)}</div>` : ''}
           ${(d.pokepastes || []).map(p => `
             ${renderEquipo(p.equipo, p.url)}
             ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
@@ -684,6 +684,31 @@ const Deberes = {
     this.render();
   }
 };
+
+// --- RENDER DESCRIPCIÓN CON LISTAS ---
+function renderDescripcion(texto) {
+  if (!texto) return '';
+  const lineas = texto.split('\n');
+  let html = '';
+  let enLista = false;
+  for (const linea of lineas) {
+    const esItem = /^\s*[-•*]\s+/.test(linea);
+    if (esItem && !enLista) {
+      html += '<ul class="desc-list">';
+      enLista = true;
+    } else if (!esItem && enLista) {
+      html += '</ul>';
+      enLista = false;
+    }
+    if (esItem) {
+      html += `<li>${escHtml(linea.replace(/^\s*[-•*]\s+/, ''))}</li>`;
+    } else {
+      html += `<p>${escHtml(linea)}</p>`;
+    }
+  }
+  if (enLista) html += '</ul>';
+  return html;
+}
 
 // --- ESC HTML (global) ---
 function escHtml(str) {
