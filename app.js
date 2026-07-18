@@ -337,6 +337,11 @@ function parsearPoképaste(texto) {
     }
     limpio = limpio.replace(/\s*\([MF]\)\s*/g, '').trim();
     limpio = limpio.replace(/[♂♀]/g, '').trim();
+    if (!forma) {
+      const sufijo = limpio.match(/-([MF])\s*$/);
+      if (sufijo) forma = sufijo[1] === 'M' ? '(m)' : '(f)';
+    }
+    limpio = limpio.replace(/-([MF])\s*$/i, '').trim();
     const token = limpio.split(/\s+/)[0];
     const baseNorm = normalizarNombre(limpio);
     const tokenNorm = normalizarNombre(token);
