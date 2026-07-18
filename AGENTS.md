@@ -34,7 +34,7 @@ Web app for a Pokémon VGC competitive gaming club. Single-page application with
 - **`Config`** - Supabase config modal (URL + anon key)
 - **`Sesiones`** - Sessions CRUD (theorica/practica). Filtered view, cards grid.
 - **`Deberes`** - Homework/tasks CRUD. Toggle completed, priority, deadlines.
-- **`POKEDEX`** - Map of Pokémon names → national dex IDs (VGC competitive only)
+- **`POKEDEX`** - Map of Pokémon names → sprite info. Values are either numeric IDs (national dex) or string paths (for forms with gender/variant sprites). VGC competitive only.
 
 ### Data Model
 ```javascript
@@ -65,9 +65,10 @@ Web app for a Pokémon VGC competitive gaming club. Single-page application with
 ```
 
 ### Key Functions
-- `parsearPoképaste(texto)` - Parses pokepaste text, extracts Pokémon names, maps to sprite IDs via POKEDEX
+- `parsearPoképaste(texto)` - Parses pokepaste text, extracts Pokémon names, handles gender/form markers (F/M/♀/♂) to look up correct sprite in POKEDEX. Returns `{nombre, sprite}` objects where sprite is either a numeric ID or string path.
 - `normalizarNombre(str)` - Normalizes names (lowercase, remove accents/symbols, guiones→espacios)
-- `renderEquipo(equipo, urlPaste)` - Renders sprite images from PokeAPI GitHub raw URLs
+- `renderEquipo(equipo, urlPaste)` - Renders sprite images. Supports both `{sprite}` (new) and `{id}` (legacy) formats via `spriteUrl()`.
+- `spriteUrl(sprite)` - Resolves sprite to full PokeAPI URL. If numeric → `{BASE}{id}.png`. If string → `{BASE}{path}`.
 - `renderYouTube(url)` - Renders YouTube link (not embedded)
 - `escHtml(str)` - XSS-safe HTML escaping
 - `mostrarEstado(tipo, mensaje)` - Status bar notifications (ok/error/loading)
@@ -107,9 +108,10 @@ SQL tables created:
 - `deberes` with RLS policies allowing all for anon
 
 ## Notes
-- Pokémon sprites from: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{id}.png`
+- Pokémon sprites from: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{id}.png` for numeric IDs, or `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{path}` for string paths (e.g., `other/home/10248.png`)
 - Poképastes URL: `https://pokepast.es/`
 - The POKEDEX object covers Gen 1-9 competitive VGC Pokémon
+- Gender/form variants use string paths in POKEDEX (e.g., `"basculegion (f)": "other/home/10248.png"`)
 - Modals are shown/hidden via `display: none/flex`
 - Sections switched via `.section.active` CSS class
 - No tests, no linting configured
