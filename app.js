@@ -423,12 +423,12 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
       <div class="calcs-cols">
         <div class="calcs-col">
           <label>Ofensivo</label>
-          <textarea rows="3" placeholder="Flare Blitz vs. 252 HP Amoonguss: 88-104 (40.5-48.1%)"
+          <textarea rows="6" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
             onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
         </div>
         <div class="calcs-col">
           <label>Defensivo</label>
-          <textarea rows="3" placeholder="Shadow Ball from Gholdengo: 68-80 (33-39%)"
+          <textarea rows="6" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
             onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
         </div>
       </div>
