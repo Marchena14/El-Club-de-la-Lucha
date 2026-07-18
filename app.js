@@ -462,7 +462,7 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
           <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsOfensivo">${renderLineasCalc(p.calcsOfensivo)}</div>
           <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsOfensivo">
             <textarea rows="8" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
-              onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
+              onblur="Sesiones.guardarCalcs('${sesionId}', '${escHtml(p.nombre).replace(/'/g, "\\'")}', 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
           </div>
         </div>
         <div class="calcs-col">
@@ -470,7 +470,7 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
           <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsDefensivo">${renderLineasCalc(p.calcsDefensivo)}</div>
           <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsDefensivo">
             <textarea rows="8" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
-              onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
+              onblur="Sesiones.guardarCalcs('${sesionId}', '${escHtml(p.nombre).replace(/'/g, "\\'")}', 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
           </div>
         </div>
       </div>
@@ -631,12 +631,16 @@ const Sesiones = {
     }
   },
 
-  async guardarCalcs(sesionId, pokemonIdx, campo, valor) {
-    const sesiones = DB.get('sesiones');
+  async guardarCalcs(sesionId, pokemonNombre, campo, valor) {
+    const sesiones = this.obtener();
     const s = sesiones.find(x => x.id === sesionId);
-    if (s?.pokepastes?.[0]?.equipo?.[pokemonIdx]) {
-      s.pokepastes[0].equipo[pokemonIdx][campo] = valor;
-      await DB.set('sesiones', sesiones);
+    const eq = s?.pokepastes?.[0]?.equipo;
+    if (eq) {
+      const poke = eq.find(p => p.nombre === pokemonNombre);
+      if (poke) {
+        poke[campo] = valor;
+        await DB.set('sesiones', sesiones);
+      }
     }
   },
 
