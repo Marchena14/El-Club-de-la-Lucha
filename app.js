@@ -423,19 +423,21 @@ function toggleEditCalc(sesionId, pokemonIdx, campo) {
   const area = document.getElementById(`calcs-area-${sesionId}-${pokemonIdx}-${campo}`);
   const btn = document.getElementById(`calcs-btn-${sesionId}-${pokemonIdx}-${campo}`);
   if (!lines || !area) return;
+  const textarea = area.querySelector('textarea');
   const editando = area.style.display === 'block';
   if (editando) {
+    const valor = textarea?.value || '';
     const nombre = panel?.dataset?.nombre || '';
-    Sesiones.guardarCalcs(sesionId, nombre, campo, area.value);
+    Sesiones.guardarCalcs(sesionId, nombre, campo, valor);
     area.style.display = 'none';
     lines.classList.remove('hidden');
     btn.textContent = 'Editar';
-    lines.innerHTML = renderLineasCalc(area.value);
+    lines.innerHTML = renderLineasCalc(valor);
   } else {
     area.style.display = 'block';
     lines.classList.add('hidden');
     btn.textContent = 'Ver';
-    area.focus();
+    textarea?.focus();
   }
 }
 
