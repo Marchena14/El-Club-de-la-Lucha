@@ -461,7 +461,7 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
           <label>Ofensivo <button type="button" class="btn-edit-calcs" id="calcs-btn-${sesionId}-${i}-calcsOfensivo" onclick="toggleEditCalc('${sesionId}', ${i}, 'calcsOfensivo')">Editar</button></label>
           <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsOfensivo">${renderLineasCalc(p.calcsOfensivo)}</div>
           <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsOfensivo">
-            <textarea rows="6" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
+            <textarea rows="8" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
               onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
           </div>
         </div>
@@ -469,7 +469,7 @@ function renderEquipo(equipo, urlPaste, tipo, sesionId) {
           <label>Defensivo <button type="button" class="btn-edit-calcs" id="calcs-btn-${sesionId}-${i}-calcsDefensivo" onclick="toggleEditCalc('${sesionId}', ${i}, 'calcsDefensivo')">Editar</button></label>
           <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsDefensivo">${renderLineasCalc(p.calcsDefensivo)}</div>
           <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsDefensivo">
-            <textarea rows="6" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
+            <textarea rows="8" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
               onblur="Sesiones.guardarCalcs('${sesionId}', ${i}, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
           </div>
         </div>
@@ -619,10 +619,16 @@ const Sesiones = {
   toggleCalcs(sesionId, idx) {
     const panel = document.getElementById(`calcs-${sesionId}-${idx}`);
     if (!panel) return;
+    const card = panel.closest('.card');
     document.querySelectorAll(`[id^="calcs-${sesionId}-"]`).forEach(p => {
       if (p.id !== `calcs-${sesionId}-${idx}`) p.style.display = 'none';
     });
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    const abriendo = panel.style.display === 'none';
+    panel.style.display = abriendo ? 'block' : 'none';
+    if (card) {
+      card.classList.toggle('card-expanded', abriendo);
+      if (abriendo) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   },
 
   async guardarCalcs(sesionId, pokemonIdx, campo, valor) {

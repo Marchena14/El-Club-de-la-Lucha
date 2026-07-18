@@ -238,6 +238,13 @@ body {
   border-color: var(--text-muted);
 }
 
+.card-expanded {
+  grid-column: 1 / -1;
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+  scroll-margin-top: 5rem;
+}
+
 .card-top {
   display: flex;
   justify-content: space-between;
@@ -464,11 +471,11 @@ body {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.5rem;
-  min-height: 4rem;
+  padding: 0.6rem;
+  min-height: 5rem;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 0.78rem;
-  line-height: 1.8;
+  font-size: 0.8rem;
+  line-height: 1.9;
 }
 
 .calcs-line {
@@ -512,14 +519,14 @@ body {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  padding: 0.5rem;
+  padding: 0.6rem;
   border-radius: var(--radius-sm);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   resize: vertical;
   transition: var(--transition);
-  min-height: 8rem;
-  line-height: 1.6;
+  min-height: 10rem;
+  line-height: 1.7;
 }
 
 .calcs-col textarea:focus {
