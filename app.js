@@ -178,7 +178,24 @@ const DB = {
 
   async _guardarGitHub() {
     const config = this._getConfig();
-    if (!config || !this._sha) return;
+    if (!config) return;
+    // Si no tenemos SHA, intentar obtenerlo
+    if (!this._sha) {
+      try {
+        const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.rama}`;
+        const resp = await fetch(url, {
+          headers: { 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          this._sha = data.sha;
+        }
+      } catch {}
+    }
+    if (!this._sha) {
+      mostrarEstado('error', 'No se pudo conectar con GitHub. Guardado solo local.');
+      return;
+    }
     mostrarEstado('loading', 'Guardando en GitHub...');
     try {
       const contenido = JSON.stringify(this._cache, null, 2);
@@ -270,7 +287,7 @@ const Config = {
   cerrarModal() {
     document.getElementById('modal-config').style.display = 'none';
   },
-  guardar(e) {
+  async guardar(e) {
     e.preventDefault();
     const config = {
       owner: document.getElementById('config-owner').value.trim(),
@@ -282,13 +299,26 @@ const Config = {
     DB._sha = null;
     this.cerrarModal();
     mostrarEstado('loading', 'Conectando con GitHub...');
-    DB.cargar().then(() => {
+    try {
+      // Obtener el SHA actual del archivo
+      const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.rama}`;
+      const resp = await fetch(url, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (!resp.ok) throw new Error(`No se pudo acceder al repo (${resp.status}). Verifica los datos.`);
+      const data = await resp.json();
+      DB._sha = data.sha;
+      // Cargar contenido actual
+      const contenido = JSON.parse(atob(data.content));
+      DB._cache = { sesiones: contenido.sesiones || [], deberes: contenido.deberes || [] };
+      localStorage.setItem('club_cache', JSON.stringify(DB._cache));
       mostrarEstado('ok', 'Conectado correctamente');
       Sesiones.render();
       Deberes.render();
-    }).catch(() => {
-      mostrarEstado('error', 'Error al conectar con GitHub');
-    });
+    } catch (e) {
+      console.error('Error conectando:', e);
+      mostrarEstado('error', 'Error: ' + e.message);
+    }
   }
 };
 
