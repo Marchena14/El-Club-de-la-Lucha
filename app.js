@@ -354,7 +354,7 @@ function parsearPoképaste(texto) {
     const claveForma = forma ? baseNorm + ' ' + forma : null;
     const sprite = (claveForma && POKEDEX[claveForma]) || POKEDEX[baseNorm] || POKEDEX[tokenNorm];
     if (sprite) {
-      nombres.push({ nombre: limpio, sprite, calcsOfensivo: '', calcsDefensivo: '' });
+      nombres.push({ nombre: limpio, sprite });
     }
   }
   return nombres;
@@ -377,68 +377,9 @@ function extraerYouTubeId(url) {
 }
 
 // --- SPRITES ---
-function reparsearEquipo(raw, equipoGuardado, calcsObj) {
+function reparsearEquipo(raw, equipoGuardado) {
   if (!raw) return equipoGuardado || [];
-  const nuevo = parsearPoképaste(raw);
-  const calcs = calcsObj || {};
-  if (equipoGuardado && equipoGuardado.length > 0) {
-    const antiguo = new Map(equipoGuardado.map(p => [p.nombre, p]));
-    nuevo.forEach(p => {
-      const old = antiguo.get(p.nombre);
-      if (old && !calcs[p.nombre]) {
-        calcs[p.nombre] = {};
-        if (old.calcsOfensivo) calcs[p.nombre].o = old.calcsOfensivo;
-        if (old.calcsDefensivo) calcs[p.nombre].d = old.calcsDefensivo;
-      }
-    });
-  }
-  nuevo.forEach(p => {
-    const pc = calcs[p.nombre] || {};
-    p.calcsOfensivo = pc.o || '';
-    p.calcsDefensivo = pc.d || '';
-  });
-  return nuevo;
-}
-
-function claseKo(texto) {
-  const t = texto.toLowerCase();
-  if (/ohko/i.test(t)) return 'ko-ohko';
-  if (/2hko/i.test(t)) return 'ko-2hko';
-  if (/3hko/i.test(t)) return 'ko-3hko';
-  if (/4hko/i.test(t)) return 'ko-4hko';
-  return 'ko-other';
-}
-
-function renderLineasCalc(texto) {
-  if (!texto || !texto.trim()) return '<div class="calcs-empty">Sin cálculos</div>';
-  return texto.trim().split('\n').filter(l => l.trim()).map(linea => {
-    const cls = claseKo(linea);
-    return `<div class="calcs-line ${cls}">${escHtml(linea.trim())}</div>`;
-  }).join('');
-}
-
-function toggleEditCalc(sesionId, pokemonIdx, campo) {
-  const panel = document.getElementById(`calcs-${sesionId}-${pokemonIdx}`);
-  const lines = document.getElementById(`calcs-lines-${sesionId}-${pokemonIdx}-${campo}`);
-  const area = document.getElementById(`calcs-area-${sesionId}-${pokemonIdx}-${campo}`);
-  const btn = document.getElementById(`calcs-btn-${sesionId}-${pokemonIdx}-${campo}`);
-  if (!lines || !area) return;
-  const textarea = area.querySelector('textarea');
-  const editando = area.style.display === 'block';
-  if (editando) {
-    const valor = textarea?.value || '';
-    const nombre = panel?.dataset?.nombre || '';
-    Sesiones.guardarCalcs(sesionId, nombre, campo, valor);
-    area.style.display = 'none';
-    lines.classList.remove('hidden');
-    btn.textContent = 'Editar';
-    lines.innerHTML = renderLineasCalc(valor);
-  } else {
-    area.style.display = 'block';
-    lines.classList.add('hidden');
-    btn.textContent = 'Ver';
-    textarea?.focus();
-  }
+  return parsearPoképaste(raw);
 }
 
 function spriteUrl(sprite) {
@@ -448,56 +389,16 @@ function spriteUrl(sprite) {
   return `${BASE}0.png`;
 }
 
-function renderEquipo(equipo, urlPaste, tipo, sesionId) {
+function renderEquipo(equipo, urlPaste) {
   if (!equipo || equipo.length === 0) return '';
-  const esPractica = tipo === 'practica';
-
-  const spritesHtml = `<div class="equipo-sprites">
-    ${equipo.map((p, i) => {
+  return `<div class="equipo-sprites">
+    ${equipo.map(p => {
       const s = p.sprite || p.id;
-      if (esPractica) {
-        return `<div class="sprite-link sprite-clickable" title="${escHtml(p.nombre)}" onclick="Sesiones.toggleCalcs('${sesionId}', ${i})">
-          <img src="${spriteUrl(s)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
-        </div>`;
-      }
       return `<a href="${escHtml(urlPaste)}" target="_blank" rel="noopener" class="sprite-link" title="${escHtml(p.nombre)}">
         <img src="${spriteUrl(s)}" alt="${escHtml(p.nombre)}" class="sprite-img" loading="lazy">
       </a>`;
     }).join('')}
   </div>`;
-
-  if (!esPractica) return spritesHtml;
-
-  const calcsHtml = equipo.map((p, i) => {
-    const s = p.sprite || p.id;
-    const nombreAttr = escHtml(p.nombre).replace(/'/g, '&#39;');
-    return `<div class="calcs-panel" id="calcs-${sesionId}-${i}" data-nombre="${nombreAttr}" style="display:none">
-      <div class="calcs-header">
-        <img src="${spriteUrl(s)}" class="calcs-sprite" alt="${escHtml(p.nombre)}">
-        <span class="calcs-name">${escHtml(p.nombre)}</span>
-      </div>
-      <div class="calcs-cols">
-        <div class="calcs-col">
-          <label>Ofensivo <button type="button" class="btn-edit-calcs" id="calcs-btn-${sesionId}-${i}-calcsOfensivo" onclick="toggleEditCalc('${sesionId}', ${i}, 'calcsOfensivo')">Editar</button></label>
-          <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsOfensivo">${renderLineasCalc(p.calcsOfensivo)}</div>
-          <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsOfensivo">
-            <textarea rows="8" placeholder="32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO"
-              onblur="Sesiones.guardarCalcs('${sesionId}', this.closest('.calcs-panel').dataset.nombre, 'calcsOfensivo', this.value)">${escHtml(p.calcsOfensivo || '')}</textarea>
-          </div>
-        </div>
-        <div class="calcs-col">
-          <label>Defensivo <button type="button" class="btn-edit-calcs" id="calcs-btn-${sesionId}-${i}-calcsDefensivo" onclick="toggleEditCalc('${sesionId}', ${i}, 'calcsDefensivo')">Editar</button></label>
-          <div class="calcs-lines" id="calcs-lines-${sesionId}-${i}-calcsDefensivo">${renderLineasCalc(p.calcsDefensivo)}</div>
-          <div class="calcs-edit-area" id="calcs-area-${sesionId}-${i}-calcsDefensivo">
-            <textarea rows="8" placeholder="252 SpA Gholdengo Shadow Ball vs. 32 HP / 0 SpD Sinistcha: 84-99 (33.7 - 39.7%) -- guaranteed 3HKO"
-              onblur="Sesiones.guardarCalcs('${sesionId}', this.closest('.calcs-panel').dataset.nombre, 'calcsDefensivo', this.value)">${escHtml(p.calcsDefensivo || '')}</textarea>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  return spritesHtml + calcsHtml;
 }
 
 function renderReplays(replays) {
@@ -588,7 +489,7 @@ const Sesiones = {
         <div class="card-title">${escHtml(s.tema)}</div>
         ${s.descripcion ? `<div class="card-desc">${renderDescripcion(s.descripcion)}</div>` : ''}
         ${(s.pokepastes || []).map(p => `
-          ${renderEquipo(reparsearEquipo(p.raw, p.equipo, p.calcs), p.url, s.tipo, s.id)}
+          ${renderEquipo(reparsearEquipo(p.raw, p.equipo), p.url)}
           ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
         `).join('')}
         ${renderReplays(s.replays)}
@@ -642,27 +543,6 @@ const Sesiones = {
 
   cerrarModal() {
     document.getElementById('modal-sesion').style.display = 'none';
-  },
-
-  toggleCalcs(sesionId, idx) {
-    const panel = document.getElementById(`calcs-${sesionId}-${idx}`);
-    if (!panel) return;
-    document.querySelectorAll(`[id^="calcs-${sesionId}-"]`).forEach(p => {
-      if (p.id !== `calcs-${sesionId}-${idx}`) p.style.display = 'none';
-    });
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  },
-
-  async guardarCalcs(sesionId, pokemonNombre, campo, valor) {
-    if (!pokemonNombre) return;
-    const sesiones = this.obtener();
-    const s = sesiones.find(x => x.id === sesionId);
-    const pp = s?.pokepastes?.[0];
-    if (!pp) return;
-    if (!pp.calcs) pp.calcs = {};
-    if (!pp.calcs[pokemonNombre]) pp.calcs[pokemonNombre] = {};
-    pp.calcs[pokemonNombre][campo === 'calcsOfensivo' ? 'o' : 'd'] = valor;
-    await DB.set('sesiones', sesiones);
   },
 
   agregarReplay(label, url) {
@@ -784,7 +664,7 @@ const Deberes = {
           <div class="deber-titulo">${escHtml(d.titulo)}</div>
           ${d.descripcion ? `<div class="deber-desc">${renderDescripcion(d.descripcion)}</div>` : ''}
           ${(d.pokepastes || []).map(p => `
-            ${renderEquipo(reparsearEquipo(p.raw, p.equipo, p.calcs), p.url)}
+            ${renderEquipo(reparsearEquipo(p.raw, p.equipo), p.url)}
             ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="pokepaste-link"><span class="pokepaste-icon">&#127775;</span> Poképaste</a>` : ''}
           `).join('')}
           <div class="deber-meta">
