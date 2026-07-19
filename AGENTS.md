@@ -14,7 +14,6 @@ Web app for a Pokémon VGC competitive gaming club. Single-page application with
 ├── index.html      # Single page, all modals and sections inline
 ├── app.js          # All JS logic
 ├── styles.css      # All styles
-├── data.json       # Legacy data file (no longer used)
 ├── logoClub.png    # Club logo
 └── AGENTS.md       # This file
 ```
@@ -117,4 +116,3 @@ SQL tables created:
 - Modals are shown/hidden via `display: none/flex`
 - Sections switched via `.section.active` CSS class
 - No tests, no linting configured
-- Calcs line format: `32+ Atk Spell Tag Aegislash-Shield Poltergeist vs. 32 HP / 0 Def Aegislash-Shield: 104-126 (62.2 - 75.4%) -- guaranteed 2HKO`
